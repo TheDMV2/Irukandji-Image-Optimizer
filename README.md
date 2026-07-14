@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="/irukandji-logo.jpg" alt="Irukandji Logo">
+</p>
+
 # Irukandji - Jellyfin Image Compressor
 Jellyfin plugin to optimize images on the fly, and in batch mode.
 [WARNING: this was 100% AI coded. All text was 100% human written.]
