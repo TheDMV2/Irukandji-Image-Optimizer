@@ -1,0 +1,1661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Irukandji Image Optimizer Configuration</title>
+</head>
+<body>
+    <div id="imageOptimizerConfigPage" data-role="page" class="page type-interior pluginConfigurationPage" data-require="emby-button,emby-input,emby-checkbox">
+        <style>
+            .optimizer-grid {
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 2em;
+                margin-bottom: 2em;
+            }
+            @media (max-width: 768px) {
+                .optimizer-grid {
+                    grid-template-columns: 1fr;
+                    gap: 1.2em;
+                }
+            }
+            .optimizer-column {
+                padding: 1.5em;
+                background: rgba(0, 0, 0, 0.15);
+                border-radius: 6px;
+                border: 1px solid rgba(255, 255, 255, 0.04);
+            }
+            .optimizer-column h2, .optimizer-column h3 {
+                margin-top: 0;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+                padding-bottom: 0.5em;
+                font-weight: bold;
+            }
+            .scrollable-results-box {
+                max-height: 450px;
+                overflow-y: scroll; /* Force vertical scrollbar to always show */
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 4px;
+                background-color: rgba(0, 0, 0, 0.2);
+                margin-top: 1.5em;
+            }
+            .scrollable-results-box thead {
+                background-color: #202020; /* Opaque header block */
+                opacity: 1;
+                position: sticky;
+                top: 0;
+                z-index: 10;
+            }
+            .summary-totals-box {
+                margin-top: 1.2em;
+                padding: 1.2em;
+                background-color: rgba(255, 255, 255, 0.05);
+                font-weight: bold;
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 4px;
+                font-size: 1.05em;
+            }
+            .explorer-link {
+                display: block;
+                padding: 0.5em;
+                background-color: rgba(255,255,255,0.05);
+                border-radius: 4px;
+                text-decoration: none;
+                color: #ffcc00 !important;
+                font-weight: bold;
+                border: 1px solid rgba(255,255,255,0.05);
+            }
+            .explorer-link:hover {
+                background-color: rgba(255,255,255,0.1);
+            }
+        </style>
+
+        <div data-role="content">
+            <div class="content-primary">
+                <h1>Irukandji Image Optimizer</h1>
+
+                <!-- Loader Warning Banner -->
+                <div id="initWarningBanner" class="paper-block" style="display: none; background-color: #ffcccc; color: #cc0000; padding: 1.2em; margin-bottom: 2em; border-left: 5px solid #cc0000; border-radius: 4px;">
+                    <h3><strong>Warning: Plugin Loader Failure</strong></h3>
+                    <p id="initWarningText"></p>
+                </div>
+
+                <form id="imageOptimizerForm">
+                    <h2>Sidebar Layout Shortcut</h2>
+                    <div class="checkboxContainer checkboxContainer-withDescription">
+                        <label>
+                            <input type="checkbox" id="chkEnableInSidebar" name="EnableInSidebar" is="emby-checkbox" />
+                            <span>Show Shortcut in Main Navigation Sidebar</span>
+                        </label>
+                        <div class="fieldDescription">Pin a direct navigation link for Irukandji Image Optimizer in the main administration sidebar menu. (Requires server restart to apply)</div>
+                    </div>
+
+                    <h2>Conversion Triggers</h2>
+                    <div class="checkboxContainer checkboxContainer-withDescription">
+                        <label>
+                            <input type="checkbox" id="chkConvertPngToJpg" name="ConvertPngToJpg" is="emby-checkbox" />
+                            <span>Convert PNG to JPG</span>
+                        </label>
+                        <div class="fieldDescription">Transform non-transparent PNG files to JPG to significantly lower space.</div>
+                    </div>
+
+                    <div class="checkboxContainer checkboxContainer-withDescription">
+                        <label>
+                            <input type="checkbox" id="chkConvertToWebpForTransparent" name="ConvertToWebpForTransparent" is="emby-checkbox" />
+                            <span>Convert Transparent PNG to WebP</span>
+                        </label>
+                        <div class="fieldDescription">Convert transparent PNGs to WebP to maintain transparency layers. If disabled, they remain optimized PNGs.</div>
+                    </div>
+
+                    <div class="checkboxContainer checkboxContainer-withDescription">
+                        <label>
+                            <input type="checkbox" id="chkConvertToAvif" name="ConvertToAvif" is="emby-checkbox" />
+                            <span>Convert Metadata Images to AVIF</span>
+                        </label>
+                        <!-- NEW: Real-time AVIF system checks placeholder -->
+                        <div id="lblAvifSupportStatus" style="font-weight: bold; margin-top: 0.25em; display: none;"></div>
+                        <div class="fieldDescription">Convert library metadata assets (backdrops, poster targets) to AVIF. Requires system-level codec support.</div>
+                    </div>
+
+                    <!-- Columnar layout of Image Format Settings -->
+                    <div class="optimizer-grid">
+                        <div class="optimizer-column">
+                            <h2>JPEG Settings</h2>
+                            <div class="inputContainer">
+                                <input is="emby-input" type="number" id="txtJpegQuality" name="JpegQuality" label="JPEG Quality (1-100)" min="1" max="100" required />
+                                <div class="fieldDescription">Target visual quality for processed JPEG assets. (Default: 75)</div>
+                            </div>
+                            <div class="checkboxContainer checkboxContainer-withDescription">
+                                <label>
+                                    <input type="checkbox" id="chkJpegProgressive" name="JpegProgressive" is="emby-checkbox" />
+                                    <span>Enable Progressive Encoding</span>
+                                </label>
+                                <div class="fieldDescription">Render JPEGs in progressive passes (blurry first, then refining). Excellent for remote streaming.</div>
+                            </div>
+                        </div>
+
+                        <div class="optimizer-column">
+                            <h2>WebP Settings</h2>
+                            <div class="inputContainer">
+                                <input is="emby-input" type="number" id="txtWebpQuality" name="WebpQuality" label="WebP Quality (1-100)" min="1" max="100" required />
+                                <div class="fieldDescription">Target quality metric for WebP assets. (Default: 60)</div>
+                            </div>
+                            <div class="checkboxContainer checkboxContainer-withDescription">
+                                <label>
+                                    <input type="checkbox" id="chkWebpLossless" name="WebpLossless" is="emby-checkbox" />
+                                    <span>Force Lossless WebP Compression</span>
+                                </label>
+                                <div class="fieldDescription">Process transparent WebP assets with zero quality loss. Lossless files may have larger filesizes.</div>
+                            </div>
+                        </div>
+
+                        <div class="optimizer-column">
+                            <h2>AVIF Settings</h2>
+                            <div class="inputContainer">
+                                <input is="emby-input" type="number" id="txtAvifQuality" name="AvifQuality" label="AvifQuality" min="1" max="100" required />
+                                <div class="fieldDescription">Quality parameters for AV1 image encoding. Recommended: 60-70.</div>
+                            </div>
+                            <div class="inputContainer">
+                                <input is="emby-input" type="number" id="txtAvifSpeed" name="AvifSpeed" label="AVIF Effort / Speed (1-10)" min="1" max="10" required />
+                                <div class="fieldDescription">Encoding speed vs size trade-off. 1 is fastest but larger; 10 is slowest but smallest. (Default: 6)</div>
+                            </div>
+                        </div>
+
+                        <div class="optimizer-column">
+                            <h2>PNG Settings</h2>
+                            <div class="inputContainer">
+                                <input is="emby-input" type="number" id="txtPngCompressionLevel" name="PngCompressionLevel" label="PNG Compression Level (0-9)" min="0" max="9" required />
+                                <div class="fieldDescription">Deflate compression level for PNG fallback saves. (Default: 6)</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h2>Client Profiling & Network Negotiation Settings</h2>
+                    <div class="checkboxContainer checkboxContainer-withDescription">
+                        <label>
+                            <input type="checkbox" id="chkEnableClientProfiling" name="EnableClientProfiling" is="emby-checkbox" />
+                            <span>Enable Mobile Client Profiling</span>
+                        </label>
+                        <div class="fieldDescription">Enables deep mobile device-aware optimization constraints for incoming remote connections.</div>
+                    </div>
+                    <div class="inputContainer">
+                        <input is="emby-input" type="number" id="txtMobileJpegQuality" name="MobileJpegQuality" label="Mobile JPEG Quality (1-100)" min="1" max="100" required />
+                    </div>
+                    <div class="inputContainer">
+                        <input is="emby-input" type="number" id="txtMobileWebpQuality" name="MobileWebpQuality" label="Mobile WebP Quality (1-100)" min="1" max="100" required />
+                    </div>
+                    <div class="inputContainer">
+                        <input is="emby-input" type="number" id="txtMobileMaxDimension" name="MobileMaxDimension" label="Mobile Max Image Dimension (px)" min="120" required />
+                        <div class="fieldDescription">The maximum bound served to mobile devices. (Default: 720)</div>
+                    </div>
+
+                    <h2>Backups & Custom Directory Rules</h2>
+                    <div class="inputContainer">
+                        <input is="emby-input" type="text" id="txtBackupFolderPath" name="BackupFolderPath" label="Backup Folder Path" />
+                        <div id="lblCurrentBackupPath" style="font-weight: bold; margin: 0.5em 0; color: #00cc66; font-size: 0.95em;">Active Path: [Resolving...]</div>
+                        <div class="fieldDescription">Specify an absolute directory path on your server where original images will be securely backed up before optimization. Leave empty to use the default configuration directory.</div>
+                        
+                        <div style="display: flex; gap: 1em; margin-top: 1em; flex-wrap: wrap;">
+                            <button is="emby-button" id="btnOpenExplorer" type="button" class="raised">Open Folder Browser</button>
+                            <button is="emby-button" id="btnTestPath" type="button" class="raised">Test Path Access</button>
+                            <span id="lblPathTestStatus" style="font-weight: bold; align-self: center;"></span>
+                        </div>
+
+                        <!-- Native Server Folder Explorer Browser GUI panel -->
+                        <div id="folderExplorerContainer" style="display: none; padding: 1.2em; margin-top: 1em; background-color: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.08); border-radius: 4px;">
+                            <h3><strong>Server Folder Browser</strong></h3>
+                            <p id="lblExplorerPath" style="font-weight: bold; color: #ffaa00; margin-bottom: 1em; word-break: break-all;"></p>
+                            
+                            <div id="divExplorerList" style="max-height: 250px; overflow-y: auto; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; padding: 0.5em; margin-bottom: 1em; display: flex; flex-direction: column; gap: 0.5em;">
+                            </div>
+                            
+                            <div style="display: flex; gap: 1em;">
+                                <button is="emby-button" id="btnSelectFolder" type="button" class="raised button-accent">Select This Folder</button>
+                                <button is="emby-button" id="btnCancelExplorer" type="button" class="raised">Cancel</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="inputContainer" style="margin-top: 2em;">
+                        <input is="emby-input" type="text" id="txtBlacklistWords" name="BlacklistWords" label="Blacklisted Words / Exclusion Filters (Comma-separated)" />
+                        <div class="fieldDescription">If any folder path, filename, or library metadata contains one or more of these words, the image is skipped without any CPU processing (e.g. "backdrop, banner").</div>
+                    </div>
+                    <div class="selectContainer">
+                        <select is="emby-select" id="selectBlacklistMatchLocation" name="BlacklistMatchLocation" label="Exclusion Filter Match Location">
+                            <option value="anywhere">Anywhere in File Path or Name</option>
+                            <option value="start">At the Start of File Path or Name</option>
+                            <option value="end">At the End of File Path or Name</option>
+                        </select>
+                        <div class="fieldDescription">Determine where the blacklist words must be matched inside the path or filename.</div>
+                    </div>
+                    <div class="checkboxContainer checkboxContainer-withDescription">
+                        <label>
+                            <input type="checkbox" id="chkBlacklistCaseSensitive" name="BlacklistCaseSensitive" is="emby-checkbox" />
+                            <span>Force Case Sensitivity on Exclusion Filters</span>
+                        </label>
+                        <div class="fieldDescription">Check to enforce exact casing rules. Insensitive is default.</div>
+                    </div>
+                    <div class="checkboxContainer checkboxContainer-withDescription">
+                        <label>
+                            <input type="checkbox" id="chkBlacklistUseAndOperator" name="BlacklistUseAndOperator" is="emby-checkbox" />
+                            <span>Use AND Operator for Exclusion Filters (All Words Must Match)</span>
+                        </label>
+                        <div class="fieldDescription">If checked, ALL specified words must be present inside the path or filename to trigger an exclusion (AND logic). If unchecked, ANY single word matching triggers an exclusion (OR logic).</div>
+                    </div>
+
+                    <h2>Dimension, Re-encoding & Logging Limits</h2>
+                    <div class="inputContainer">
+                        <input is="emby-input" type="number" id="txtMinImprovementPercentage" name="MinImprovementPercentage" label="Minimum Improvement to Transcode (%)" min="0" max="100" required />
+                        <div class="fieldDescription">If the optimized image is not at least X% smaller than the original, the write operation is aborted. This prevents quality loss from over-re-encoding. (Default: 5%)</div>
+                    </div>
+
+                    <div class="inputContainer">
+                        <input is="emby-input" type="number" id="txtMaxMetadataDimension" name="MaxMetadataDimension" label="Max Metadata Dimension (px)" min="120" required />
+                        <div class="fieldDescription">The maximum bound (either Width or Height, whichever is larger). Restricts the larger side while maintaining aspect ratios. (Default: 1920)</div>
+                    </div>
+
+                    <div class="inputContainer">
+                        <input is="emby-input" type="number" id="txtMaxAvatarDimension" name="MaxAvatarDimension" label="Max Avatar Dimension (px)" min="64" required />
+                        <div class="fieldDescription">The maximum bound (either Width or Height, whichever is larger). Restricts the larger side while maintaining aspect ratios. (Default: 512)</div>
+                    </div>
+
+                    <div class="checkboxContainer checkboxContainer-withDescription">
+                        <label>
+                            <input type="checkbox" id="chkLogCodecWarnings" name="LogCodecWarnings" is="emby-checkbox" />
+                            <span>Log Missing System Codec Failures</span>
+                        </label>
+                        <div class="fieldDescription">Log system-level errors or lack of native AVIF build support to server log files.</div>
+                    </div>
+
+                    <button is="emby-button" type="submit" class="raised button-submit block">Save Settings</button>
+                </form>
+
+                <hr style="margin: 3.5em 0;" />
+
+                <!-- Incremental Library Sweeper -->
+                <h2>Incremental Library Sweeper</h2>
+                <p>Scan and process uncompressed images inside your metadata directories and physical libraries. To prevent timeouts, manual scans are processed in progressive batches of 50 automatically until complete.</p>
+                <div class="paper-block" style="padding: 1.5em; margin-bottom: 2em; border-radius: 6px;">
+                    
+                    <h2>Select Areas to Process</h2>
+                    <div style="margin-bottom: 2em;" class="optimizer-column">
+                        <div class="checkboxContainer checkboxContainer-withDescription">
+                            <label>
+                                <input type="checkbox" id="chkProcessMetadata" name="ProcessMetadata" is="emby-checkbox" />
+                                <span>#1: Metadata</span>
+                            </label>
+                            <div class="fieldDescription">Processes uncompressed configuration metadata images (typically located inside /config/metadata).</div>
+                        </div>
+
+                        <div class="checkboxContainer checkboxContainer-withDescription">
+                            <label>
+                                <input type="checkbox" id="chkProcessCollections" name="ProcessCollections" is="emby-checkbox" />
+                                <span>#2: Collections</span>
+                            </label>
+                            <div class="fieldDescription">Processes uncompressed custom collection art (typically located inside /config/data/collections).</div>
+                        </div>
+
+                        <div class="checkboxContainer checkboxContainer-withDescription">
+                            <label>
+                                <input type="checkbox" id="chkProcessPlaylists" name="ProcessPlaylists" is="emby-checkbox" />
+                                <span>#3: Playlists</span>
+                            </label>
+                            <div class="fieldDescription">Processes playlists poster elements (typically located inside /config/data/playlists).</div>
+                        </div>
+
+                        <div class="checkboxContainer checkboxContainer-withDescription">
+                            <label>
+                                <input type="checkbox" id="chkProcessSmartlists" name="ProcessSmartlists" is="emby-checkbox" />
+                                <span>#4: Smartlists</span>
+                            </label>
+                            <div id="lblSmartlistsStatus" style="font-weight: bold; margin-top: 0.25em;"></div>
+                            <div class="fieldDescription">Processes smart playlists artwork files (typically located inside /config/data/smartlists). Gated dynamically based on directory existence.</div>
+                        </div>
+
+                        <div class="checkboxContainer checkboxContainer-withDescription">
+                            <label>
+                                <input type="checkbox" id="chkProcessLibraryCovers" name="ProcessLibraryCovers" is="emby-checkbox" />
+                                <span>#5: Library covers</span>
+                            </label>
+                            <div class="fieldDescription">Processes default server root navigation panels cover banners (typically located inside /config/root/default).</div>
+                        </div>
+
+                        <!-- Nested configuration for library covers resize -->
+                        <div id="divResizeLibraryCoversContainer" class="checkboxContainer checkboxContainer-withDescription" style="margin-left: 2em; margin-top: 1.0em; display: none;">
+                            <label>
+                                <input type="checkbox" id="chkResizeLibraryCovers" name="ResizeLibraryCovers" is="emby-checkbox" />
+                                <span>Further resize covers to custom width</span>
+                            </label>
+                            <div class="inputContainer" style="margin-top: 0.5em; max-width: 150px;">
+                                <input is="emby-input" type="number" id="txtLibraryCoversWidth" name="LibraryCoversWidth" label="Width (px)" min="50" />
+                            </div>
+                            <div class="fieldDescription">If checked, library covers will be downscaled to this custom width boundary (Default: 500px).</div>
+                        </div>
+
+                        <div class="checkboxContainer checkboxContainer-withDescription">
+                            <label>
+                                <input type="checkbox" id="chkProcessUserProfiles" name="ProcessUserProfiles" is="emby-checkbox" />
+                                <span>#6: User profile pics</span>
+                            </label>
+                            <div class="fieldDescription">Processes custom user configuration display profile avatars (typically located inside /config/users).</div>
+                        </div>
+
+                        <div class="checkboxContainer checkboxContainer-withDescription">
+                            <label>
+                                <input type="checkbox" id="chkProcessTrickplay" name="ProcessTrickplay" is="emby-checkbox" />
+                                <span>#7: Trickplay</span>
+                            </label>
+                            <div class="fieldDescription">Processes B-frame trickplay index thumbnails inside media library storage locations (stored in folders ending in ".trickplay"). Evaluated regardless of option #8 parameters.</div>
+                        </div>
+
+                        <!-- Slightly smaller red checkbox located immediately below option #7 -->
+                        <div id="divPurgeTrickplayContainer" class="checkboxContainer checkboxContainer-withDescription" style="margin-left: 2em; margin-top: 1.0em;">
+                            <label>
+                                <input type="checkbox" id="chkPurgeTrickplay" name="PurgeTrickplay" is="emby-checkbox" />
+                                <span style="color: #ff3333; font-weight: bold;">Purge unnecessary trickplay folders</span>
+                            </label>
+                            <div class="fieldDescription" style="color: #ff8888;">Deletes matching trickplay folders for trailers (-trailer.trickplay) or inside extras directories instead of compressing them. Deletes folder contents entirely.</div>
+                        </div>
+
+                        <div style="margin-top: 2em; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 1.5em;">
+                            <span style="font-weight: bold; color: #ffcc00; display: block; margin-bottom: 0.5em;">#8: Media Folders Warning!</span>
+                            <span style="font-size: 0.9em; display: block; margin-bottom: 1em; color: #ffaa00;">This will process every image in your media folders. If you have special features, DVD covers, or similar files, they will be optimized.</span>
+                            <button is="emby-button" id="btnOpenMediaLibrariesMenu" type="button" class="raised">Configure Media Libraries</button>
+                        </div>
+                    </div>
+
+                    <!-- Native Media Libraries Selection Modal -->
+                    <div id="mediaLibrariesMenuModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center;">
+                        <div class="optimizer-column" style="background: #1c1c1c; width: 90%; max-width: 500px; padding: 2em; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
+                            <h3 style="color: #ffcc00;">Configure Media Libraries</h3>
+                            <p style="font-size: 0.9em; color: #bbb; margin-bottom: 1.5em;">Select the individual library paths you want optimized during the sweeper run:</p>
+                            
+                            <div id="divMediaLibrariesCheckboxes" style="display: flex; flex-direction: column; gap: 0.75em; max-height: 250px; overflow-y: auto; margin-bottom: 2em; padding-right: 0.5em;">
+                                <!-- Populated dynamically via search -->
+                            </div>
+
+                            <div style="display: flex; gap: 1em; justify-content: flex-end;">
+                                <button is="emby-button" id="btnSaveMediaLibrariesSelection" type="button" class="raised button-accent">Apply Selection</button>
+                                <button is="emby-button" id="btnCancelMediaLibrariesSelection" type="button" class="raised">Cancel</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="checkboxContainer checkboxContainer-withDescription" style="margin-bottom: 1.5em;">
+                        <label>
+                            <!-- Label ID added for dynamic color warning overrides -->
+                            <input type="checkbox" id="chkBackupBeforeSweep" name="BackupBeforeSweep" is="emby-checkbox" />
+                            <span id="lblBackupBeforeSweepText">Backup uncompressed original files before optimizing</span>
+                        </label>
+                        <div class="fieldDescription">Copies original files to your server backup folder "sweep_date" prior to rewriting. Strongly recommended.</div>
+                    </div>
+
+                    <div style="display: flex; gap: 1.2em; flex-wrap: wrap;">
+                        <button is="emby-button" id="btnSweeperDryRun" type="button" class="raised button-accent">Run Dry Run Sweep</button>
+                        <button is="emby-button" id="btnSweeperLiveRun" type="button" class="raised">Run Actual Write Sweep</button>
+                        <button is="emby-button" id="btnSweeperPause" type="button" class="raised" style="display: none;">Pause Sweep</button>
+                        <button is="emby-button" id="btnSweeperUndo" type="button" class="raised">Undo Last Sweep</button>
+                        <button is="emby-button" id="btnSweeperPurge" type="button" class="raised" style="background-color: #cc0000; color: #fff;">Purge Backups</button>
+                        <button is="emby-button" id="btnSweeperResetReg" type="button" class="raised">Reset Sweep History</button>
+                        <button is="emby-button" id="btnSaveSweeperReport" type="button" class="raised" style="display: none;">Save Report as Text File</button>
+                    </div>
+
+                    <div id="sweeperStatusBlock" style="margin-top: 1.5em; font-size: 1.1em; font-weight: bold; display: none;"></div>
+
+                    <!-- Scrollable table results container to prevent dashboard expansion -->
+                    <div id="sweeperResultsContainer" style="display: none;">
+                        <div class="scrollable-results-box">
+                            <table id="tblSweeperResults" style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.95em;">
+                                <thead>
+                                    <tr style="border-bottom: 2px solid #555; background-color: #202020; opacity: 1; position: sticky; top: 0; z-index: 10;">
+                                        <th style="padding: 0.75em;">File Path</th>
+                                        <th style="padding: 0.75em;">Original format / size</th>
+                                        <th style="padding: 0.75em;">Original Dimensions</th>
+                                        <th style="padding: 0.75em;">Optimized format / size</th>
+                                        <th style="padding: 0.75em;">Optimized Dimensions</th>
+                                        <th style="padding: 0.75em;">Saved / Fidelity</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbodySweeperResults"></tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- Stationary Summary Footer -->
+                        <div id="sweeperSummaryFooter" class="summary-totals-box"></div>
+                    </div>
+                </div>
+
+                <hr style="margin: 3.5em 0;" />
+
+                <!-- Comparison Lab -->
+                <h2>Image Optimization Test Lab</h2>
+                <p>Simulate local or metadata optimization metrics live without modifying files saved inside your libraries.</p>
+                
+                <div class="paper-block" style="padding: 1.5em; margin-bottom: 2em; border-radius: 6px;">
+                    <div class="optimizer-grid">
+                        <div class="optimizer-column">
+                            <h3>Method 1: Manual Image Upload</h3>
+                            <div style="margin-bottom: 1.5em;">
+                                <input type="file" id="testImageFile" accept="image/*" style="display:none;" />
+                                <button is="emby-button" id="btnSelectTestImage" type="button" class="raised block" style="margin-bottom: 1em;">Choose Image</button>
+                                <span id="selectedFileName" style="font-style: italic;">No file selected</span>
+                            </div>
+                            <button is="emby-button" id="btnRunTest" type="button" class="raised button-accent block" disabled>Run Manual Test</button>
+                        </div>
+
+                        <div class="optimizer-column">
+                            <h3>Method 2: Remote Metadata Search</h3>
+                            <div style="margin-bottom: 1.5em;">
+                                <div class="inputContainer">
+                                    <input is="emby-input" type="text" id="txtSearchMovieName" label="Movie Name / Title" />
+                                </div>
+                                <div class="inputContainer">
+                                    <input is="emby-input" type="text" id="txtSearchImdbId" label="IMDb ID (e.g. tt12801262)" />
+                                </div>
+                                <button is="emby-button" id="btnSearchMetadata" type="button" class="raised block">Search Providers</button>
+                            </div>
+
+                            <div id="divSearchMetadataResults" style="display: none; margin-top: 1em;">
+                                <div class="selectContainer">
+                                    <select is="emby-select" id="selectMetadataResult" label="Select Movie Match">
+                                        <!-- Populated via search -->
+                                    </select>
+                                </div>
+                                <button is="emby-button" id="btnRunMetadataTest" type="button" class="raised button-accent block">Download & Test Optimization</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="testResultContainer" style="display:none; margin-top: 2em;">
+                        <h3>Results Summary</h3>
+                        <p id="sizeComparisonText" style="font-size: 1.2em; font-weight: bold; color: #00cc66;"></p>
+
+                        <div style="display: flex; flex-wrap: wrap; gap: 2em; margin-top: 1.5em;">
+                            <div style="flex: 1; min-width: 280px; border: 1px solid #555; border-radius: 4px; padding: 1.2em; text-align: center;">
+                                <h4>Original</h4>
+                                <p id="lblOriginalMeta" style="color: #bbb;"></p>
+                                <img id="imgOriginalPreview" style="max-width: 100%; max-height: 400px; border-radius: 4px;" alt="Original Preview" />
+                            </div>
+                            <div style="flex: 1; min-width: 280px; border: 1px solid #555; border-radius: 4px; padding: 1.2em; text-align: center;">
+                                <h4>Optimized</h4>
+                                <p id="lblOptimizedMeta" style="color: #bbb;"></p>
+                                <img id="imgOptimizedPreview" style="max-width: 100%; max-height: 400px; border-radius: 4px;" alt="Optimized Preview" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <script type="text/javascript">
+            (function () {
+                const pluginId = "A8D36D61-D8B4-4B3F-8C5C-BDC3B98D7122";
+                let lastSweeperData = null; // Stores raw parsed sweeper object sequence for report file exports
+
+                // Dirty flag bindings to prevent accidental navigation loss or unsaved sweep/test executions
+                let isFormDirty = false;
+                let allowBypass = false;
+                let isSweeperRunning = false;
+                let stopSweeperRequest = false;
+                let isBackupPathVerified = true; // Protects configuration save from unverified paths
+                let explorerCurrentPath = ""; // Active directory target inside file browser
+                let sweeperStartTime = 0; // Tracks elapsed execution speed
+                let tempIncludedLibraries = ""; // Local state tracker mapping Media Libraries selected ticks
+
+                // Safe Token Resolver: prevents JavaScript termination if ApiClient.accessToken is a property instead of a function
+                function getAuthHeader() {
+                    const token = (typeof ApiClient.accessToken === 'function') 
+                        ? ApiClient.accessToken() 
+                        : (ApiClient.accessToken || "");
+                    return 'MediaBrowser Client="Jellyfin Web", Device="Web Browser", DeviceId="WebBrowser", Version="1.0.0", Token=' + token;
+                }
+
+                function loadLibrariesList(page, selectedLibraries) {
+                    const checkboxesContainer = page.querySelector('#divLibraryCheckboxes');
+                    if (checkboxesContainer) {
+                        checkboxesContainer.innerHTML = "Loading libraries...";
+                    }
+
+                    // Correction: Migration to native getJSON wrapper to guarantee robust token headers and bypass cross-origin browser policies
+                    ApiClient.getJSON(ApiClient.getUrl('ImageOptimizer/Libraries'))
+                    .then(libraries => {
+                        if (checkboxesContainer) {
+                            checkboxesContainer.innerHTML = "";
+                            if (libraries.length === 0) {
+                                checkboxesContainer.innerHTML = "No media libraries detected.";
+                                return;
+                            }
+
+                            const selectedSet = new Set(selectedLibraries ? selectedLibraries.split(',') : []);
+
+                            libraries.forEach(lib => {
+                                const label = document.createElement('label');
+                                label.style.display = 'flex';
+                                label.style.alignItems = 'center';
+                                label.style.gap = '0.5em';
+                                label.style.margin = '0.25em 0';
+
+                                const input = document.createElement('input');
+                                input.type = 'checkbox';
+                                input.className = 'library-select-chk';
+                                input.value = lib.Name;
+                                input.checked = selectedSet.has(lib.Name);
+
+                                input.addEventListener('change', () => {
+                                    isFormDirty = true;
+                                    allowBypass = false;
+                                });
+
+                                const span = document.createElement('span');
+                                span.innerText = lib.Name;
+
+                                label.appendChild(input);
+                                label.appendChild(span);
+                                checkboxesContainer.appendChild(label);
+                            });
+                        }
+                    })
+                    .catch(err => {
+                        if (checkboxesContainer) {
+                            checkboxesContainer.innerHTML = "Error loading libraries: " + err.message;
+                        }
+                    });
+                }
+
+                function loadConfig(page) {
+                    ApiClient.getPluginConfiguration(pluginId).then(function (config) {
+                        page.querySelector('#chkConvertPngToJpg').checked = config.ConvertPngToJpg;
+                        page.querySelector('#chkConvertToWebpForTransparent').checked = config.ConvertToWebpForTransparent;
+                        page.querySelector('#chkConvertToAvif').checked = config.ConvertToAvif;
+                        page.querySelector('#chkEnableInSidebar').checked = config.EnableInSidebar;
+                        
+                        page.querySelector('#txtJpegQuality').value = config.JpegQuality !== undefined ? config.JpegQuality : 75;
+                        page.querySelector('#chkJpegProgressive').checked = config.JpegProgressive;
+
+                        page.querySelector('#txtWebpQuality').value = config.WebpQuality !== undefined ? config.WebpQuality : 60;
+                        page.querySelector('#chkWebpLossless').checked = config.WebpLossless;
+
+                        page.querySelector('#txtAvifQuality').value = config.AvifQuality || 65;
+                        page.querySelector('#txtAvifSpeed').value = config.AvifSpeed || 6;
+
+                        page.querySelector('#txtPngCompressionLevel').value = config.PngCompressionLevel !== undefined ? config.PngCompressionLevel : 6;
+
+                        page.querySelector('#txtMaxMetadataDimension').value = config.MaxMetadataDimension || 1920;
+                        page.querySelector('#txtMaxAvatarDimension').value = config.MaxAvatarDimension || 512;
+                        page.querySelector('#chkLogCodecWarnings').checked = config.LogCodecWarnings;
+
+                        // Mobile negotiation bindings
+                        page.querySelector('#chkEnableClientProfiling').checked = config.EnableClientProfiling;
+                        page.querySelector('#txtMobileJpegQuality').value = config.MobileJpegQuality !== undefined ? config.MobileJpegQuality : 20;
+                        page.querySelector('#txtMobileWebpQuality').value = config.MobileWebpQuality !== undefined ? config.MobileWebpQuality : 20;
+                        page.querySelector('#txtMobileMaxDimension').value = config.MobileMaxDimension || 720;
+
+                        // Blacklist bindings
+                        page.querySelector('#txtBlacklistWords').value = config.BlacklistWords || "";
+                        page.querySelector('#chkBlacklistCaseSensitive').checked = config.BlacklistCaseSensitive;
+                        page.querySelector('#selectBlacklistMatchLocation').value = config.BlacklistMatchLocation || "anywhere";
+                        page.querySelector('#chkBlacklistUseAndOperator').checked = config.BlacklistUseAndOperator;
+
+                        // Backup bindings
+                        page.querySelector('#chkBackupBeforeSweep').checked = config.BackupBeforeSweep;
+                        page.querySelector('#txtMinImprovementPercentage').value = config.MinImprovementPercentage !== undefined ? config.MinImprovementPercentage : 5;
+                        
+                        const backupPath = config.BackupFolderPath || "";
+                        page.querySelector('#txtBackupFolderPath').value = backupPath;
+                        page.querySelector('#lblCurrentBackupPath').innerText = "Active Path: " + (backupPath || "Default Folder");
+
+                        // Correction: If path is unset, flash a warning, turn tickbox text red, and disable the tickbox
+                        const chkBackupBeforeSweep = page.querySelector('#chkBackupBeforeSweep');
+                        const lblBackupBeforeSweepText = page.querySelector('#lblBackupBeforeSweepText');
+                        if (!backupPath) {
+                            chkBackupBeforeSweep.setAttribute('disabled', 'disabled');
+                            lblBackupBeforeSweepText.style.color = '#ff3333';
+                            chkBackupBeforeSweep.checked = false;
+                        } else {
+                            chkBackupBeforeSweep.removeAttribute('disabled');
+                            lblBackupBeforeSweepText.style.color = '';
+                        }
+
+                        // Sweeper checklist dynamic triggers
+                        page.querySelector('#chkProcessMetadata').checked = config.ProcessMetadata !== false;
+                        page.querySelector('#chkProcessCollections').checked = config.ProcessCollections !== false;
+                        page.querySelector('#chkProcessPlaylists').checked = config.ProcessPlaylists !== false;
+                        page.querySelector('#chkProcessLibraryCovers').checked = !!config.ProcessLibraryCovers;
+                        page.querySelector('#chkProcessUserProfiles').checked = !!config.ProcessUserProfiles;
+                        page.querySelector('#chkProcessTrickplay').checked = !!config.ProcessTrickplay;
+                        page.querySelector('#chkPurgeTrickplay').checked = !!config.PurgeTrickplay;
+
+                        // Retrieve active media library paths configuration locally
+                        tempIncludedLibraries = config.IncludedLibraries || "";
+
+                        // Dynamic toggles display settings on page load
+                        page.querySelector('#chkResizeLibraryCovers').checked = config.ResizeLibraryCovers === true;
+                        page.querySelector('#txtLibraryCoversWidth').value = config.LibraryCoversWidth || 500;
+
+                        if (config.ProcessLibraryCovers) {
+                            page.querySelector('#divResizeLibraryCoversContainer').style.display = 'block';
+                        } else {
+                            page.querySelector('#divResizeLibraryCoversContainer').style.display = 'none';
+                        }
+
+                        // Smartlists folder verification
+                        const lblSmartlistsStatus = page.querySelector('#lblSmartlistsStatus');
+                        const chkProcessSmartlists = page.querySelector('#chkProcessSmartlists');
+
+                        ApiClient.getJSON(ApiClient.getUrl('ImageOptimizer/SmartlistsExists'))
+                        .then(data => {
+                            if (data.Exists) {
+                                lblSmartlistsStatus.style.color = '#00cc66';
+                                lblSmartlistsStatus.innerText = "Smartlists folder detected.";
+                                chkProcessSmartlists.removeAttribute('disabled');
+                                chkProcessSmartlists.checked = config.ProcessSmartlists !== false;
+                            } else {
+                                lblSmartlistsStatus.style.color = '#cc0000';
+                                lblSmartlistsStatus.innerText = "Smartlists folder not found.";
+                                chkProcessSmartlists.setAttribute('disabled', 'disabled');
+                                chkProcessSmartlists.checked = false;
+                            }
+                        })
+                        .catch(err => {
+                            lblSmartlistsStatus.style.color = '#ffaa00';
+                            lblSmartlistsStatus.innerText = "Failed to verify Smartlists folder: " + err;
+                        });
+
+                        // Dynamic check mapping AVIF system capability matrix
+                        const lblAvifSupportStatus = page.querySelector('#lblAvifSupportStatus');
+                        const chkConvertToAvif = page.querySelector('#chkConvertToAvif');
+
+                        ApiClient.getJSON(ApiClient.getUrl('ImageOptimizer/AvifSupported'))
+                        .then(data => {
+                            lblAvifSupportStatus.style.display = 'block';
+                            if (data.Supported) {
+                                lblAvifSupportStatus.style.color = '#00cc66'; // Green matches Fidelity column styling
+                                lblAvifSupportStatus.innerText = "AVIF is available on this system";
+                                chkConvertToAvif.removeAttribute('disabled');
+                            } else {
+                                lblAvifSupportStatus.style.color = '#cc0000'; // Red matches warning banner styling
+                                lblAvifSupportStatus.innerText = "AVIF is not available on this system";
+                                chkConvertToAvif.setAttribute('disabled', 'disabled');
+                                chkConvertToAvif.checked = false; // Disables and unchecks settings if codec verification fails
+                            }
+                        })
+                        .catch(err => {
+                            lblAvifSupportStatus.style.display = 'block';
+                            lblAvifSupportStatus.style.color = '#ffaa00'; // Yellow warning fallback
+                            lblAvifSupportStatus.innerText = "Unable to verify AVIF system support: " + err;
+                        });
+
+                        // Initialize dirty listeners after form inputs are fully bound
+                        isFormDirty = false;
+                        allowBypass = false;
+                        isBackupPathVerified = true;
+                    });
+
+                    // Verification: Native wrapper check automatically routing via authenticated API bridge
+                    ApiClient.getJSON(ApiClient.getUrl('ImageOptimizer/Status'))
+                    .then(status => {
+                        if (!status.Success) {
+                            page.querySelector('#initWarningBanner').style.display = 'block';
+                            page.querySelector('#initWarningText').innerText = status.ErrorMessage || "An unhandled initialization error occurred.";
+                        }
+                    }).catch(err => {
+                        page.querySelector('#initWarningBanner').style.display = 'block';
+                        page.querySelector('#initWarningText').innerText = "Status validation unreachable: " + err;
+                    });
+                }
+
+                const renderSize = (bytes) => {
+                    if (bytes === 0) return '0 Bytes';
+                    const k = 1024;
+                    const sizes = ['Bytes', 'KB', 'MB'];
+                    const i = Math.floor(Math.log(bytes) / Math.log(k));
+                    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+                };
+
+                document.querySelector('#imageOptimizerConfigPage').addEventListener('pageshow', function () {
+                    const page = this;
+                    loadConfig(page);
+
+                    const fileInput = page.querySelector('#testImageFile');
+                    const selectBtn = page.querySelector('#btnSelectTestImage');
+                    const runBtn = page.querySelector('#btnRunTest');
+                    const fileLabel = page.querySelector('#selectedFileName');
+
+                    // Remote Metadata Search & Test hooks
+                    const txtSearchMovieName = page.querySelector('#txtSearchMovieName');
+                    const txtSearchImdbId = page.querySelector('#txtSearchImdbId');
+                    const btnSearchMetadata = page.querySelector('#btnSearchMetadata');
+                    const divSearchMetadataResults = page.querySelector('#divSearchMetadataResults');
+                    const selectMetadataResult = page.querySelector('#selectMetadataResult');
+                    const btnRunMetadataTest = page.querySelector('#btnRunMetadataTest');
+
+                    // #8: Media Libraries Modal Elements
+                    const btnOpenMediaLibrariesMenu = page.querySelector('#btnOpenMediaLibrariesMenu');
+                    const mediaLibrariesMenuModal = page.querySelector('#mediaLibrariesMenuModal');
+                    const divMediaLibrariesCheckboxes = page.querySelector('#divMediaLibrariesCheckboxes');
+                    const btnSaveMediaLibrariesSelection = page.querySelector('#btnSaveMediaLibrariesSelection');
+                    const btnCancelMediaLibrariesSelection = page.querySelector('#btnCancelMediaLibrariesSelection');
+
+                    // Sweeper Hooks
+                    const btnSweeperDryRun = page.querySelector('#btnSweeperDryRun');
+                    const btnSweeperLiveRun = page.querySelector('#btnSweeperLiveRun');
+                    const btnSweeperPause = page.querySelector('#btnSweeperPause');
+                    const btnSweeperUndo = page.querySelector('#btnSweeperUndo');
+                    const btnSweeperPurge = page.querySelector('#btnSweeperPurge');
+                    const btnSweeperResetReg = page.querySelector('#btnSweeperResetReg');
+                    const btnSaveSweeperReport = page.querySelector('#btnSaveSweeperReport');
+                    const sweeperStatusBlock = page.querySelector('#sweeperStatusBlock');
+                    const sweeperResultsContainer = page.querySelector('#sweeperResultsContainer');
+                    const tbodySweeperResults = page.querySelector('#tbodySweeperResults');
+                    const sweeperSummaryFooter = page.querySelector('#sweeperSummaryFooter');
+
+                    // Backup Path hooks
+                    const btnTestPath = page.querySelector('#btnTestPath');
+                    const lblPathTestStatus = page.querySelector('#lblPathTestStatus');
+                    const txtBackupFolderPath = page.querySelector('#txtBackupFolderPath');
+
+                    // File Browser GUI Hooks
+                    const btnOpenExplorer = page.querySelector('#btnOpenExplorer');
+                    const folderExplorerContainer = page.querySelector('#folderExplorerContainer');
+                    const lblExplorerPath = page.querySelector('#lblExplorerPath');
+                    const divExplorerList = page.querySelector('#divExplorerList');
+                    const btnSelectFolder = page.querySelector('#btnSelectFolder');
+                    const btnCancelExplorer = page.querySelector('#btnCancelExplorer');
+
+                    const chkBackupBeforeSweep = page.querySelector('#chkBackupBeforeSweep');
+                    const lblBackupBeforeSweepText = page.querySelector('#lblBackupBeforeSweepText');
+
+                    const chkProcessLibraryCovers = page.querySelector('#chkProcessLibraryCovers');
+                    const divResizeLibraryCoversContainer = page.querySelector('#divResizeLibraryCoversContainer');
+                    
+                    chkProcessLibraryCovers.addEventListener('change', (e) => {
+                        isFormDirty = true;
+                        allowBypass = false;
+                        if (e.target.checked) {
+                            divResizeLibraryCoversContainer.style.display = 'block';
+                        } else {
+                            divResizeLibraryCoversContainer.style.display = 'none';
+                        }
+                    });
+
+                    // Open #8: Media Libraries selection dialog
+                    btnOpenMediaLibrariesMenu.addEventListener('click', () => {
+                        divMediaLibrariesCheckboxes.innerHTML = "Loading libraries...";
+                        mediaLibrariesMenuModal.style.display = 'flex';
+
+                        // Build active selected set based on temporarily stored selections
+                        const selectedSet = new Set(tempIncludedLibraries.split(',').map(s => s.trim()));
+
+                        ApiClient.getJSON(ApiClient.getUrl('ImageOptimizer/Libraries'))
+                        .then(libraries => {
+                            divMediaLibrariesCheckboxes.innerHTML = "";
+                            if (libraries.length === 0) {
+                                divMediaLibrariesCheckboxes.innerHTML = "No media libraries detected.";
+                                return;
+                            }
+
+                            libraries.forEach(lib => {
+                                const label = document.createElement('label');
+                                label.style.display = 'flex';
+                                label.style.alignItems = 'center';
+                                label.style.gap = '0.5em';
+                                label.style.margin = '0.25em 0';
+
+                                const input = document.createElement('input');
+                                input.type = 'checkbox';
+                                input.className = 'media-library-select-chk';
+                                input.value = lib.Name;
+                                input.checked = selectedSet.has(lib.Name);
+
+                                const span = document.createElement('span');
+                                span.innerText = lib.Name;
+
+                                label.appendChild(input);
+                                label.appendChild(span);
+                                divMediaLibrariesCheckboxes.appendChild(label);
+                            });
+                        })
+                        .catch(err => {
+                            divMediaLibrariesCheckboxes.innerHTML = "Failed to load media libraries: " + err.message;
+                        });
+                    });
+
+                    btnCancelMediaLibrariesSelection.addEventListener('click', () => {
+                        mediaLibrariesMenuModal.style.display = 'none';
+                    });
+
+                    btnSaveMediaLibrariesSelection.addEventListener('click', () => {
+                        const checked = [];
+                        divMediaLibrariesCheckboxes.querySelectorAll('.media-library-select-chk:checked').forEach(input => {
+                            checked.push(input.value);
+                        });
+
+                        tempIncludedLibraries = checked.join(',');
+                        isFormDirty = true;
+                        allowBypass = false;
+                        mediaLibrariesMenuModal.style.display = 'none';
+                    });
+
+                    // Listen to form input edits to mark dirty flag status
+                    page.querySelector('#imageOptimizerForm').addEventListener('input', function (e) {
+                        isFormDirty = true;
+                        allowBypass = false;
+                        if (e.target.id === 'txtBackupFolderPath') {
+                            isBackupPathVerified = false; // Require new verification test if path changes
+                            lblPathTestStatus.innerText = "";
+                        }
+                    });
+
+                    // Intercept navigation away from the configuration panel within Jellyfin's single-page router (SPA)
+                    page.addEventListener('pagebeforehide', function (e) {
+                        if (isFormDirty && !allowBypass) {
+                            alert("You have unsaved configuration changes. Click away once more to leave without saving.");
+                            allowBypass = true;
+                            e.preventDefault();
+                        }
+                    });
+
+                    // System-level window unload blocker for tab close boundaries
+                    window.addEventListener('beforeunload', function (e) {
+                        if (isFormDirty) {
+                            e.preventDefault();
+                            e.returnValue = '';
+                        }
+                    });
+
+                    // Verification helper: Prompts warning once if unsaved changes are present
+                    const checkUnsavedChanges = (actionName) => {
+                        if (isFormDirty && !allowBypass) {
+                            alert("You have unsaved changes. Running a " + actionName + " now will use your currently saved server parameters (excluding unsaved GUI inputs). Click again to proceed anyway.");
+                            allowBypass = true;
+                            return false;
+                        }
+                        return true;
+                    };
+
+                    // Execute Backup Path Validation (Calls Environment Endpoint for verification)
+                    const triggerPathAccessTest = (testPath) => {
+                        lblPathTestStatus.style.color = '#ffcc00';
+                        lblPathTestStatus.innerText = "Testing directory access permissions...";
+
+                        // Correction: Direct migration to native ApiClient.ajax to circumvent protocol restrictions
+                        ApiClient.ajax({
+                            type: 'POST',
+                            url: ApiClient.getUrl('ImageOptimizer/Path/Test?path=' + encodeURIComponent(testPath))
+                        })
+                        .then(response => response.json()) // Parse standard Fetch Response object to JSON payload
+                        .then(data => {
+                            if (data.Success) {
+                                lblPathTestStatus.style.color = '#00cc66';
+                                lblPathTestStatus.innerText = "Directory Verified! Read/Write permissions granted.";
+                                isBackupPathVerified = true;
+                                
+                                // Unlock backup toggle once verified
+                                chkBackupBeforeSweep.removeAttribute('disabled');
+                                lblBackupBeforeSweepText.style.color = '';
+                            } else {
+                                lblPathTestStatus.style.color = '#cc0000';
+                                lblPathTestStatus.innerText = "Access Denied: " + data.ErrorMessage;
+                                isBackupPathVerified = false;
+                                
+                                // Lock backup toggle if validation fails
+                                chkBackupBeforeSweep.setAttribute('disabled', 'disabled');
+                                lblBackupBeforeSweepText.style.color = '#ff3333';
+                                chkBackupBeforeSweep.checked = false;
+                            }
+                        })
+                        .catch(err => {
+                            lblPathTestStatus.style.color = '#cc0000';
+                            lblPathTestStatus.innerText = "Access Test Failed: " + (err.message || err);
+                            isBackupPathVerified = false;
+                            
+                            chkBackupBeforeSweep.setAttribute('disabled', 'disabled');
+                            lblBackupBeforeSweepText.style.color = '#ff3333';
+                            chkBackupBeforeSweep.checked = false;
+                        });
+                    };
+
+                    btnTestPath.addEventListener('click', () => {
+                        triggerPathAccessTest(txtBackupFolderPath.value.trim());
+                    });
+
+                    // GUI File Browser execution mapping (Leverages Jellyfin native environment API)
+                    const renderFolderExplorer = (targetPath) => {
+                        divExplorerList.innerHTML = "Loading folders...";
+                        lblExplorerPath.innerText = targetPath || "Server Drive Roots";
+                        explorerCurrentPath = targetPath;
+
+                        // Unified path calculation targets for native Environment API (Correction: Authorization header integrated)
+                        const url = targetPath 
+                            ? ApiClient.getUrl('Environment/DirectoryContents?includeDirectories=true&includeFiles=false&path=' + encodeURIComponent(targetPath))
+                            : ApiClient.getUrl('Environment/Drives');
+
+                        ApiClient.getJSON(url)
+                        .then(dirs => {
+                            divExplorerList.innerHTML = "";
+                            
+                            // If we are currently exploring a subdirectory, add a "Go Up" shortcut navigation link
+                            if (targetPath) {
+                                const upLink = document.createElement('a');
+                                upLink.href = "#";
+                                upLink.className = "explorer-link";
+                                upLink.innerText = ".. (Go Up)";
+                                upLink.addEventListener('click', (e) => {
+                                    e.preventDefault();
+                                    // Parse local parent path
+                                    let path = targetPath;
+                                    if (path.endsWith('/') || path.endsWith('\\')) path = path.slice(0, -1);
+                                    const lastSlash = Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\'));
+                                    const parentPath = lastSlash <= 0 ? "" : path.slice(0, lastSlash);
+                                    renderFolderExplorer(parentPath);
+                                });
+                                divExplorerList.appendChild(upLink);
+                            }
+
+                            if (dirs.length === 0) {
+                                const divEmpty = document.createElement('div');
+                                divEmpty.innerText = "No accessible subdirectories in this path.";
+                                divExplorerList.appendChild(divEmpty);
+                                return;
+                            }
+
+                            dirs.forEach(d => {
+                                const a = document.createElement('a');
+                                a.href = "#";
+                                a.className = "explorer-link";
+                                a.innerText = d.Name || d.Path;
+                                a.addEventListener('click', (e) => {
+                                    e.preventDefault();
+                                    renderFolderExplorer(d.Path);
+                                });
+                                divExplorerList.appendChild(a);
+                            });
+                        })
+                        .catch(err => {
+                            divExplorerList.innerHTML = "Failed to list directories: " + err.message;
+                        });
+                    };
+
+                    btnOpenExplorer.addEventListener('click', () => {
+                        folderExplorerContainer.style.display = 'block';
+                        renderFolderExplorer(txtBackupFolderPath.value.trim());
+                    });
+
+                    btnCancelExplorer.addEventListener('click', () => {
+                        folderExplorerContainer.style.display = 'none';
+                    });
+
+                    btnSelectFolder.addEventListener('click', () => {
+                        txtBackupFolderPath.value = explorerCurrentPath;
+                        folderExplorerContainer.style.display = 'none';
+                        page.querySelector('#lblCurrentBackupPath').innerText = "Active Path: " + (explorerCurrentPath || "Default Folder");
+                        isFormDirty = true;
+                        allowBypass = false;
+
+                        // Immediate Automatic Validation trigger
+                        triggerPathAccessTest(explorerCurrentPath);
+                    });
+
+                    selectBtn.addEventListener('click', () => fileInput.click());
+
+                    fileInput.addEventListener('change', (e) => {
+                        if (e.target.files.length > 0) {
+                            fileLabel.innerText = e.target.files[0].name;
+                            runBtn.removeAttribute('disabled');
+                        } else {
+                            fileLabel.innerText = "No file selected";
+                            runBtn.setAttribute('disabled', 'disabled');
+                        }
+                    });
+
+                    // Trigger Metadata-level optimization sandbox runs
+                    runBtn.addEventListener('click', () => {
+                        // Check for unsaved changes before starting test lab pipeline
+                        if (!checkUnsavedChanges("Test Optimization")) return;
+
+                        const file = fileInput.files[0];
+                        if (!file) return;
+
+                        const formData = new FormData();
+                        formData.append('file', file);
+
+                        runBtn.setAttribute('disabled', 'disabled');
+                        runBtn.innerText = "Analyzing...";
+
+                        // Correction: Uses native fetch with absolute URL and safe token mapping to circumvent SDK FormData upload restrictions
+                        let url = ApiClient.getUrl('ImageOptimizer/Test');
+                        if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                            const serverAddress = (typeof ApiClient.serverAddress === 'function') ? ApiClient.serverAddress() : (ApiClient.serverAddress || "");
+                            url = serverAddress + (url.startsWith('/') ? '' : '/') + url;
+                        }
+
+                        fetch(url, {
+                            method: 'POST',
+                            body: formData,
+                            headers: {
+                                'Authorization': getAuthHeader()
+                            }
+                        })
+                        .then(response => {
+                            if (!response.ok) {
+                                throw response;
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            page.querySelector('#testResultContainer').style.display = 'block';
+                            
+                            const originalSizeVal = renderSize(data.OriginalSize);
+                            const optimizedSizeVal = renderSize(data.OptimizedSize);
+                            const percent = ((data.OriginalSize - data.OptimizedSize) / data.OriginalSize * 100).toFixed(1);
+
+                            // Dynamic formatting specs details report list based on selected target codec format
+                            let compressionDetails = "";
+                            if (data.OptimizedType === "image/jpeg") {
+                                compressionDetails = "Quality: " + data.JpegQuality + " | Progressive: " + (data.JpegProgressive ? "Enabled" : "Disabled") + " | Chroma Subsampling: 4:2:0";
+                            } else if (data.OptimizedType === "image/webp") {
+                                compressionDetails = "Quality: " + data.WebpQuality + " | Mode: " + (data.WebpLossless ? "Lossless" : "Lossy (Webp)");
+                            } else if (data.OptimizedType === "image/avif") {
+                                compressionDetails = "Quality: " + data.AvifQuality + " | Encoding speed: " + data.AvifSpeed + " | Compression: Lossy (AVIF)";
+                            } else if (data.OptimizedType === "image/png") {
+                                compressionDetails = "ZLib Level: " + data.PngCompressionLevel + " | Filter pass: AllFilters";
+                            }
+
+                            // Bypasses ES6 template literals using basic string concatenation to prevent Jellyfin translation engine intercepts
+                            page.querySelector('#sizeComparisonText').innerText = "Simulation succeeded. Storage decreased by " + percent + "% (" + originalSizeVal + " down to " + optimizedSizeVal + ")";
+                            
+                            // Metrics profile: Appends execution latency (processing time) and visual quality score alongside structural parameters
+                            page.querySelector('#lblOriginalMeta').innerText = "Format: " + data.OriginalType + " | Size: " + originalSizeVal + " | Dimensions: " + data.OriginalWidth + "x" + data.OriginalHeight + "px";
+                            page.querySelector('#lblOptimizedMeta').innerText = "Format: " + data.OptimizedType + " | Size: " + optimizedSizeVal + " | Dimensions: " + data.OptimizedWidth + "x" + data.OptimizedHeight + "px | Specs: " + compressionDetails + " | Time: " + data.ProcessingTimeMs + "ms | Visual Fidelity: " + data.FidelityScore + "/100";
+
+                            page.querySelector('#imgOriginalPreview').src = data.OriginalBase64;
+                            page.querySelector('#imgOptimizedPreview').src = data.OptimizedBase64;
+                        })
+                        .catch(err => {
+                            if (err && typeof err.text === 'function') {
+                                err.text().then(text => {
+                                    alert("Analysis halted: Status " + err.status + " - " + text);
+                                });
+                            } else {
+                                alert("Analysis halted: " + (err.message || err));
+                            }
+                        })
+                        .finally(() => {
+                            runBtn.removeAttribute('disabled');
+                            runBtn.innerText = "Run Manual Test";
+                        });
+                    });
+
+                    // Metadata Provider Search action
+                    btnSearchMetadata.addEventListener('click', () => {
+                        const name = txtSearchMovieName.value.trim();
+                        const imdb = txtSearchImdbId.value.trim();
+
+                        if (!name && !imdb) {
+                            alert("Please enter a movie title or IMDb ID.");
+                            return;
+                        }
+
+                        btnSearchMetadata.setAttribute('disabled', 'disabled');
+                        btnSearchMetadata.innerText = "Searching...";
+                        divSearchMetadataResults.style.display = 'none';
+                        selectMetadataResult.innerHTML = '';
+
+                        const url = ApiClient.getUrl('ImageOptimizer/Metadata/Search?query=' + encodeURIComponent(name) + '&imdbId=' + encodeURIComponent(imdb));
+                        
+                        // Correction: Uses native getJSON wrapper to pass searches smoothly inside Cordova or file origin environments
+                        ApiClient.getJSON(url)
+                        .then(results => {
+                            if (results.length === 0) {
+                                alert("No matches containing remote image assets were returned.");
+                                return;
+                            }
+
+                            results.forEach(item => {
+                                const opt = document.createElement('option');
+                                opt.value = item.ImageUrl;
+                                opt.innerText = item.Name + (item.Year ? " (" + item.Year + ")" : "");
+                                selectMetadataResult.appendChild(opt);
+                            });
+
+                            divSearchMetadataResults.style.display = 'block';
+                        })
+                        .catch(err => {
+                            alert("Search failed: " + (err.message || err));
+                        })
+                        .finally(() => {
+                            btnSearchMetadata.removeAttribute('disabled');
+                            btnSearchMetadata.innerText = "Search Providers";
+                        });
+                    });
+
+                    // Download and test remote image
+                    btnRunMetadataTest.addEventListener('click', () => {
+                        const imageUrl = selectMetadataResult.value;
+                        if (!imageUrl) return;
+
+                        if (!checkUnsavedChanges("Remote Metadata Test")) return;
+
+                        btnRunMetadataTest.setAttribute('disabled', 'disabled');
+                        btnRunMetadataTest.innerText = "Downloading & Testing...";
+
+                        const url = ApiClient.getUrl('ImageOptimizer/Metadata/Test?imageUrl=' + encodeURIComponent(imageUrl));
+                        
+                        // Correction: Direct implementation of ApiClient.ajax for POST operations to resolve browser fetch failures
+                        ApiClient.ajax({
+                            type: 'POST',
+                            url: url
+                        })
+                        .then(response => response.json()) // Parse standard Fetch Response object to JSON payload
+                        .then(data => {
+                            page.querySelector('#testResultContainer').style.display = 'block';
+                            
+                            const originalSizeVal = renderSize(data.OriginalSize);
+                            const optimizedSizeVal = renderSize(data.OptimizedSize);
+                            const percent = ((data.OriginalSize - data.OptimizedSize) / data.OriginalSize * 100).toFixed(1);
+
+                            let compressionDetails = "";
+                            if (data.OptimizedType === "image/jpeg") {
+                                compressionDetails = "Quality: " + data.JpegQuality + " | Progressive: " + (data.JpegProgressive ? "Enabled" : "Disabled") + " | Chroma Subsampling: 4:2:0";
+                            } else if (data.OptimizedType === "image/webp") {
+                                compressionDetails = "Quality: " + data.WebpQuality + " | Mode: " + (data.WebpLossless ? "Lossless" : "Lossy (Webp)");
+                            } else if (data.OptimizedType === "image/avif") {
+                                compressionDetails = "Quality: " + data.AvifQuality + " | Encoding speed: " + data.AvifSpeed + " | Compression: Lossy (AVIF)";
+                            } else if (data.OptimizedType === "image/png") {
+                                compressionDetails = "ZLib Level: " + data.PngCompressionLevel + " | Filter pass: AllFilters";
+                            }
+
+                            page.querySelector('#sizeComparisonText').innerText = "On-the-fly metadata test succeeded. Storage decreased by " + percent + "% (" + originalSizeVal + " down to " + optimizedSizeVal + ")";
+                            
+                            page.querySelector('#lblOriginalMeta').innerText = "Format: " + data.OriginalType + " | Size: " + originalSizeVal + " | Dimensions: " + data.OriginalWidth + "x" + data.OriginalHeight + "px";
+                            page.querySelector('#lblOptimizedMeta').innerText = "Format: " + data.OptimizedType + " | Size: " + optimizedSizeVal + " | Dimensions: " + data.OptimizedWidth + "x" + data.OptimizedHeight + "px | Specs: " + compressionDetails + " | Time: " + data.ProcessingTimeMs + "ms | Visual Fidelity: " + data.FidelityScore + "/100";
+
+                            page.querySelector('#imgOriginalPreview').src = data.OriginalBase64;
+                            page.querySelector('#imgOptimizedPreview').src = data.OptimizedBase64;
+                        })
+                        .catch(err => {
+                            alert("Metadata optimization failed: " + (err.message || err));
+                        })
+                        .finally(() => {
+                            btnRunMetadataTest.removeAttribute('disabled');
+                            btnRunMetadataTest.innerText = "Download & Test Optimization";
+                        });
+                    });
+
+                    // Render results table with highlight on dimension changes
+                    const renderSweeperTable = (results, totalOriginal, totalOptimized, isDryRun) => {
+                        tbodySweeperResults.innerHTML = '';
+                        let skippedCount = 0;
+                        let compressedCount = 0;
+
+                        results.forEach(item => {
+                            const tr = document.createElement('tr');
+                            tr.style.borderBottom = '1px solid #444';
+
+                            const tdPath = document.createElement('td');
+                            tdPath.style.padding = '0.50em';
+                            tdPath.style.wordBreak = 'break-all';
+                            tdPath.innerText = item.Path;
+
+                            const tdOrigSize = document.createElement('td');
+                            tdOrigSize.style.padding = '0.50em';
+                            tdOrigSize.innerText = item.ContentType + " (" + renderSize(item.OriginalSize) + ")";
+
+                            const tdOrigDim = document.createElement('td');
+                            tdOrigDim.style.padding = '0.50em';
+                            tdOrigDim.innerText = item.OriginalDim;
+
+                            const tdOptSize = document.createElement('td');
+                            tdOptSize.style.padding = '0.50em';
+                            tdOptSize.innerText = item.NewContentType + " (" + renderSize(item.OptimizedSize) + ")";
+
+                            const tdOptDim = document.createElement('td');
+                            tdOptDim.style.padding = '0.50em';
+                            tdOptDim.innerText = item.OptimizedDim;
+
+                            if (item.OriginalDim !== item.OptimizedDim) {
+                                tdOptDim.style.color = '#00cc66'; // Tone matched to Saved/Fidelity column
+                                tdOptDim.style.fontWeight = 'bold';
+                            }
+
+                            const tdSaved = document.createElement('td');
+                            tdSaved.style.padding = '0.50em';
+                            
+                            if (item.SavedStatus === "Purged" || item.SavedStatus === "DryRunPurged") {
+                                tdSaved.style.color = '#ff4444';
+                                if (isDryRun) {
+                                    tdSaved.innerText = "[Dry Run] Potential Purge: Saved " + renderSize(item.OriginalSize);
+                                } else {
+                                    tdSaved.innerText = "Purged: Saved " + renderSize(item.OriginalSize);
+                                }
+                                compressedCount++;
+                            } else if (item.SavedStatus === "NotImprovedEnough") {
+                                tdSaved.style.color = '#ffaa00';
+                                const minImprovement = page.querySelector('#txtMinImprovementPercentage').value;
+                                tdSaved.innerText = "Skipped (Shrunk by " + item.ReductionPercent + "% but needs " + minImprovement + "%)";
+                                skippedCount++;
+                            } else {
+                                tdSaved.style.color = '#00cc66';
+                                const diff = item.OriginalSize - item.OptimizedSize;
+                                const savings = diff > 0 ? ((diff / item.OriginalSize) * 100).toFixed(1) : 0;
+                                if (isDryRun) {
+                                    tdSaved.innerText = "[Dry Run] Potential: " + renderSize(diff) + " (" + savings + "%) | Fidelity: " + item.FidelityScore + "/100";
+                                } else {
+                                    tdSaved.innerText = renderSize(diff) + " (" + savings + "%) | Fidelity: " + item.FidelityScore + "/100";
+                                }
+                                compressedCount++;
+                            }
+
+                            tr.appendChild(tdPath);
+                            tr.appendChild(tdOrigSize);
+                            tr.appendChild(tdOrigDim);
+                            tr.appendChild(tdOptSize);
+                            tr.appendChild(tdOptDim);
+                            tr.appendChild(tdSaved);
+                            tbodySweeperResults.appendChild(tr);
+                        });
+
+                        const totalDiff = totalOriginal - totalOptimized;
+                        const totalSavings = totalOriginal > 0 ? ((totalDiff / totalOriginal) * 100).toFixed(1) : 0;
+
+                        sweeperSummaryFooter.innerHTML = '';
+                        
+                        const divTotal = document.createElement('div');
+                        divTotal.style.marginBottom = '0.5em';
+                        if (isDryRun) {
+                            divTotal.innerHTML = "<strong style='color:#ffaa00;'>[DRY RUN - NO FILES CHANGED]</strong> " + results.length + " assets evaluated | " + compressedCount + " potentially compressable | " + skippedCount + " skipped";
+                        } else {
+                            divTotal.innerText = "TOTAL RUN STATISTICS: " + results.length + " assets evaluated | " + compressedCount + " compressed | " + skippedCount + " skipped";
+                        }
+
+                        const divSavings = document.createElement('div');
+                        divSavings.style.color = '#00cc66';
+                        if (isDryRun) {
+                            divSavings.innerText = "Total original size: " + renderSize(totalOriginal) + " | Potential new size: " + renderSize(totalOptimized) + " | Potentially saved: " + renderSize(totalDiff) + " (" + totalSavings + "% Potentially Saved)";
+                        } else {
+                            divSavings.innerText = "Total original size: " + renderSize(totalOriginal) + " | Total optimized size: " + renderSize(totalOptimized) + " | Saved: " + renderSize(totalDiff) + " (" + totalSavings + "% Saved)";
+                        }
+
+                        sweeperSummaryFooter.appendChild(divTotal);
+                        sweeperSummaryFooter.appendChild(divSavings);
+                    };
+
+                    // Library Sweeper Recursive Batch Trigger logic (Correction: Loops automatically on any non-zero returned batch)
+                    const executeSweeperBatch = (dryRun, backup, accumResults, accumOrig, accumOpt) => {
+                        // Formatting helper for precise execution timing metrics (Correction: displays elapsed speed metrics upon pausing or completing)
+                        const getTimingString = (totalCount) => {
+                            const elapsedMs = Date.now() - sweeperStartTime;
+                            const minutes = Math.floor(elapsedMs / 60000);
+                            const seconds = Math.floor((elapsedMs % 60000) / 1000);
+                            const avgSeconds = totalCount > 0 ? (elapsedMs / 1000 / totalCount).toFixed(4) : "0.0000";
+                            return "Processed " + totalCount + " files in " + minutes + " minutes, " + seconds + " seconds, averaging 1 file every " + avgSeconds + " seconds.";
+                        };
+
+                        if (stopSweeperRequest) {
+                            sweeperStatusBlock.style.color = '#ffaa00';
+                            sweeperStatusBlock.innerText = "Sweep paused by administrator. " + getTimingString(accumResults.length);
+                            isSweeperRunning = false;
+                            btnSweeperDryRun.removeAttribute('disabled');
+                            btnSweeperLiveRun.removeAttribute('disabled');
+                            btnSweeperPause.style.display = 'none';
+                            return;
+                        }
+
+                        // Correction: Calculate page offset index dynamically for Dry Run simulations to prevent endless loops
+                        const startIndex = accumResults.length;
+
+                        // Correction: Sweeper recursive requests migrated to ApiClient.ajax standard wrapper
+                        ApiClient.ajax({
+                            type: 'POST',
+                            url: ApiClient.getUrl('ImageOptimizer/Sweeper/Run?dryRun=' + dryRun + '&backup=' + backup + '&startIndex=' + startIndex)
+                        })
+                        .then(response => response.json()) // Parse standard Fetch Response object to JSON payload
+                        .then(data => {
+                            lastSweeperData = data;
+
+                            // Only stop when the server successfully optimizes 0 files (indicated by empty list)
+                            if (!data.Results || data.Results.length === 0) {
+                                sweeperStatusBlock.style.color = '#00cc66';
+                                sweeperStatusBlock.innerText = "Library sweep fully completed! " + getTimingString(accumResults.length);
+                                isSweeperRunning = false;
+                                btnSweeperDryRun.removeAttribute('disabled');
+                                btnSweeperLiveRun.removeAttribute('disabled');
+                                btnSweeperPause.style.display = 'none';
+                                return;
+                            }
+
+                            // Progressive accumulation
+                            const newResults = accumResults.concat(data.Results);
+                            
+                            // Exclude skipped files from totals
+                            let batchOrig = 0;
+                            let batchOpt = 0;
+                            data.Results.forEach(item => {
+                                if (item.SavedStatus === "Saved" || item.SavedStatus === "DryRun" || item.SavedStatus === "Purged" || item.SavedStatus === "DryRunPurged") {
+                                    batchOrig += item.OriginalSize;
+                                    batchOpt += item.OptimizedSize;
+                                }
+                            });
+
+                            const newOrig = accumOrig + batchOrig;
+                            const newOpt = accumOpt + batchOpt;
+
+                            // Create an aggregated result mapping payload for report downloads
+                            lastSweeperData.Results = newResults;
+                            lastSweeperData.TotalOriginal = newOrig;
+                            lastSweeperData.TotalOptimized = newOpt;
+
+                            sweeperResultsContainer.style.display = 'block';
+                            btnSaveSweeperReport.style.display = 'block';
+                            renderSweeperTable(newResults, newOrig, newOpt, dryRun);
+
+                            // Speedometer: Calculates and appends files-per-second processing throughput metric
+                            const elapsedSeconds = (Date.now() - sweeperStartTime) / 1000;
+                            const speed = elapsedSeconds > 0 ? (newResults.length / elapsedSeconds).toFixed(1) : 0;
+
+                            sweeperStatusBlock.innerText = "Optimizing batch... Progress: " + newResults.length + " images processed. Speed: " + speed + " files/sec.";
+
+                            // Recursively call next batch automatically on ANY returned results list above 0 files
+                            executeSweeperBatch(dryRun, backup, newResults, newOrig, newOpt);
+                        })
+                        .catch(err => {
+                            sweeperStatusBlock.style.color = '#cc0000';
+                            sweeperStatusBlock.innerText = "Sweep halted on exception: " + (err.message || err);
+                            isSweeperRunning = false;
+                            btnSweeperDryRun.removeAttribute('disabled');
+                            btnSweeperLiveRun.removeAttribute('disabled');
+                            btnSweeperPause.style.display = 'none';
+                        });
+                    };
+
+                    const triggerSweeper = (dryRun) => {
+                        if (!checkUnsavedChanges("Sweeper Run")) return;
+
+                        // Retrieve the current live state of checkbox values in the DOM
+                        const procMetadata = page.querySelector('#chkProcessMetadata').checked;
+                        const procCollections = page.querySelector('#chkProcessCollections').checked;
+                        const procPlaylists = page.querySelector('#chkProcessPlaylists').checked;
+                        
+                        // Smartlists element might be disabled, so we check if it is checked
+                        const chkSmart = page.querySelector('#chkProcessSmartlists');
+                        const procSmartlists = chkSmart ? chkSmart.checked : false;
+
+                        const procCovers = page.querySelector('#chkProcessLibraryCovers').checked;
+                        const procProfiles = page.querySelector('#chkProcessUserProfiles').checked;
+                        const procTrickplay = page.querySelector('#chkProcessTrickplay').checked;
+                        const hasMediaFolders = !!tempIncludedLibraries;
+
+                        // Guard: If absolutely nothing is checked, interrupt sweep and flash a yellow alert
+                        if (!procMetadata && !procCollections && !procPlaylists && !procSmartlists && !procCovers && !procProfiles && !procTrickplay && !hasMediaFolders) {
+                            sweeperStatusBlock.style.display = 'block';
+                            sweeperStatusBlock.style.color = '#ffaa00'; // Warning Yellow
+                            sweeperStatusBlock.innerText = "Notice: No items or folders have been selected. Please choose at least one area to process (#1 to #7) or configure media folders under Option #8 before starting a library sweep.";
+                            
+                            sweeperResultsContainer.style.display = 'none';
+                            btnSaveSweeperReport.style.display = 'none';
+                            tbodySweeperResults.innerHTML = '';
+                            return;
+                        }
+
+                        isSweeperRunning = true;
+                        stopSweeperRequest = false;
+                        sweeperStartTime = Date.now(); // Record start timestamp
+
+                        btnSweeperDryRun.setAttribute('disabled', 'disabled');
+                        btnSweeperLiveRun.setAttribute('disabled', 'disabled');
+                        btnSweeperPause.removeAttribute('disabled');
+                        btnSweeperPause.style.display = 'block';
+
+                        sweeperStatusBlock.style.display = 'block';
+                        sweeperStatusBlock.style.color = '#ffcc00';
+                        sweeperStatusBlock.innerText = "Initializing library analysis scan... Please wait.";
+                        sweeperResultsContainer.style.display = 'none';
+                        btnSaveSweeperReport.style.display = 'none';
+                        tbodySweeperResults.innerHTML = '';
+
+                        const backup = page.querySelector('#chkBackupBeforeSweep').checked;
+                        executeSweeperBatch(dryRun, backup, [], 0, 0);
+                    };
+
+                    btnSweeperDryRun.addEventListener('click', () => triggerSweeper(true));
+                    btnSweeperLiveRun.addEventListener('click', () => triggerSweeper(false));
+
+                    // Pause Action
+                    btnSweeperPause.addEventListener('click', () => {
+                        stopSweeperRequest = true;
+                        sweeperStatusBlock.innerText = "Halting operation after current batch... Please wait.";
+                        btnSweeperPause.setAttribute('disabled', 'disabled');
+                    });
+
+                    // Sweeper Undo trigger
+                    btnSweeperUndo.addEventListener('click', () => {
+                        sweeperStatusBlock.style.display = 'block';
+                        sweeperStatusBlock.style.color = '#ffcc00';
+                        sweeperStatusBlock.innerText = "Restoring most recent sweep backup... Please wait.";
+                        sweeperResultsContainer.style.display = 'none';
+                        btnSaveSweeperReport.style.display = 'none';
+
+                        btnSweeperDryRun.setAttribute('disabled', 'disabled');
+                        btnSweeperLiveRun.setAttribute('disabled', 'disabled');
+                        btnSweeperUndo.setAttribute('disabled', 'disabled');
+                        btnSweeperPurge.setAttribute('disabled', 'disabled');
+
+                        // Correction: Direct migration to ApiClient.ajax for secure metadata restores
+                        ApiClient.ajax({
+                            type: 'POST',
+                            url: ApiClient.getUrl('ImageOptimizer/Sweeper/Undo')
+                        })
+                        .then(response => response.json()) // Parse standard Fetch Response object to JSON payload
+                        .then(data => {
+                            sweeperStatusBlock.style.color = '#00cc66';
+                            sweeperStatusBlock.innerText = "Undo successful. Restored " + data.RestoredCount + " files from backup folder '" + data.BackupFolder + "'.";
+                        })
+                        .catch(err => {
+                            sweeperStatusBlock.style.color = '#cc0000';
+                            sweeperStatusBlock.innerText = "Undo failed: " + (err.message || err);
+                        })
+                        .finally(() => {
+                            btnSweeperDryRun.removeAttribute('disabled');
+                            btnSweeperLiveRun.removeAttribute('disabled');
+                            btnSweeperUndo.removeAttribute('disabled');
+                            btnSweeperPurge.removeAttribute('disabled');
+                        });
+                    });
+
+                    // Sweeper Purge trigger
+                    btnSweeperPurge.addEventListener('click', () => {
+                        // First check dirty/unsaved configuration state
+                        if (!checkUnsavedChanges("Purge Backups")) return;
+
+                        // Confirm purge before dispatching request
+                        if (!confirm("Are you sure you want to permanently delete all uncompressed backup folders? This action cannot be undone.")) {
+                            return;
+                        }
+
+                        sweeperStatusBlock.style.display = 'block';
+                        sweeperStatusBlock.style.color = '#ffcc00';
+                        sweeperStatusBlock.innerText = "Purging all uncompressed backup folders... Please wait.";
+                        sweeperResultsContainer.style.display = 'none';
+                        btnSaveSweeperReport.style.display = 'none';
+
+                        btnSweeperDryRun.setAttribute('disabled', 'disabled');
+                        btnSweeperLiveRun.setAttribute('disabled', 'disabled');
+                        btnSweeperUndo.setAttribute('disabled', 'disabled');
+                        btnSweeperPurge.setAttribute('disabled', 'disabled');
+
+                        // Correction: Employs ApiClient.ajax for reliable sequential batch directories purge
+                        ApiClient.ajax({
+                            type: 'POST',
+                            url: ApiClient.getUrl('ImageOptimizer/Sweeper/Purge')
+                        })
+                        .then(response => response.json()) // Parse standard Fetch Response object to JSON payload
+                        .then(data => {
+                            // Dynamic checking: Gracefully check if folder count is zero and show warning without success message
+                            if (data.FolderCount === 0) {
+                                sweeperStatusBlock.style.color = '#ffaa00'; // Yellow Warning
+                                sweeperStatusBlock.innerText = "There are no backups available to delete.";
+                                return;
+                            }
+                            
+                            sweeperStatusBlock.style.color = '#00cc66';
+                            sweeperStatusBlock.innerText = "Purge complete. Successfully deleted " + data.FolderCount + " backup directories, reclaiming " + renderSize(data.ReclaimedBytes) + " of drive space.";
+                        })
+                        .catch(err => {
+                            sweeperStatusBlock.style.color = '#cc0000';
+                            sweeperStatusBlock.innerText = "Purge failed: " + (err.message || err);
+                        })
+                        .finally(() => {
+                            btnSweeperDryRun.removeAttribute('disabled');
+                            btnSweeperLiveRun.removeAttribute('disabled');
+                            btnSweeperUndo.removeAttribute('disabled');
+                            btnSweeperPurge.removeAttribute('disabled');
+                        });
+                    });
+
+                    // Reset Registry trigger
+                    btnSweeperResetReg.addEventListener('click', () => {
+                        if (!confirm("Are you sure you want to reset the sweep history? This will allow future sweeps to re-examine all previously processed images.")) {
+                            return;
+                        }
+
+                        sweeperStatusBlock.style.display = 'block';
+                        sweeperStatusBlock.style.color = '#ffcc00';
+                        sweeperStatusBlock.innerText = "Resetting optimization history registry... Please wait.";
+
+                        // Correction: Uses ApiClient.ajax to safely reset database registries
+                        ApiClient.ajax({
+                            type: 'POST',
+                            url: ApiClient.getUrl('ImageOptimizer/Sweeper/ResetRegistry')
+                        })
+                        .then(response => response.json()) // Parse standard Fetch Response object to JSON payload
+                        .then(data => {
+                            sweeperStatusBlock.style.color = '#00cc66';
+                            sweeperStatusBlock.innerText = "Sweep history successfully cleared. All library images can now be re-swept.";
+                        })
+                        .catch(err => {
+                            sweeperStatusBlock.style.color = '#cc0000';
+                            sweeperStatusBlock.innerText = "Reset failed: " + (err.message || err);
+                        });
+                    });
+
+                    // Save report files as native txt downloads
+                    btnSaveSweeperReport.addEventListener('click', () => {
+                        if (!lastSweeperData) return;
+
+                        const isDryRun = !!lastSweeperData.IsDryRun;
+                        let text = "IRUKANDJI IMAGE OPTIMIZER SWEEPER REPORT" + (isDryRun ? " (DRY RUN - NO FILES MODIFIED)" : "") + "\r\n";
+                        text += "Date: " + new Date().toISOString() + "\r\n";
+                        text += "================================================================================\r\n\r\n";
+
+                        lastSweeperData.Results.forEach((item, idx) => {
+                            const diff = item.OriginalSize - item.OptimizedSize;
+                            const pct = diff > 0 ? ((diff / item.OriginalSize) * 100).toFixed(1) : 0;
+                            text += (idx + 1) + ". " + item.Path + "\r\n";
+                            text += "   Original:  " + item.ContentType + " | " + renderSize(item.OriginalSize) + " | " + item.OriginalDim + "\r\n";
+                            text += "   Optimized: " + item.NewContentType + " | " + renderSize(item.OptimizedSize) + " | " + item.OptimizedDim + "\r\n";
+                            text += "   Reduction: " + renderSize(diff) + " (" + pct + ")\r\n\r\n";
+                        });
+
+                        const totalDiff = lastSweeperData.TotalOriginal - lastSweeperData.TotalOptimized;
+                        const totalSavings = lastSweeperData.TotalOriginal > 0 ? ((totalDiff / lastSweeperData.TotalOriginal) * 100).toFixed(1) : 0;
+
+                        text += "================================================================================\r\n";
+                        text += "SUMMARY RESULTS:\r\n";
+                        text += "   Total Files Scanned:   " + lastSweeperData.Results.length + "\r\n";
+                        text += "   Total Original Size:   " + renderSize(lastSweeperData.TotalOriginal) + "\r\n";
+                        if (isDryRun) {
+                            text += "   Potential New Size:    " + renderSize(lastSweeperData.TotalOptimized) + "\r\n";
+                            text += "   Potential Savings:     " + renderSize(totalDiff) + " (" + totalSavings + "% Saved)\r\n";
+                        } else {
+                            text += "   Total Optimized Size:  " + renderSize(lastSweeperData.TotalOptimized) + "\r\n";
+                            text += "   Total Storage Saved:   " + renderSize(totalDiff) + " (" + totalSavings + "% Saved)\r\n";
+                        }
+
+                        const blob = new Blob([text], { type: 'text/plain' });
+                        const link = document.createElement('a');
+                        link.href = URL.createObjectURL(blob);
+                        link.download = "Irukandji_Sweeper_Report_" + Date.now() + ".txt";
+                        link.click();
+                    });
+                });
+
+                document.querySelector('#imageOptimizerForm').addEventListener('submit', function (e) {
+                    e.preventDefault();
+                    const page = document.querySelector('#imageOptimizerConfigPage');
+
+                    // Enforce backup path validation prior to updating config settings
+                    if (!isBackupPathVerified) {
+                        alert("You have modified your backup folder path but have not tested access permissions yet. Click 'Test Path Access' and confirm permissions are granted before saving.");
+                        return false;
+                    }
+
+                    ApiClient.getPluginConfiguration(pluginId).then(function (config) {
+                        config.ConvertPngToJpg = page.querySelector('#chkConvertPngToJpg').checked;
+                        config.ConvertToWebpForTransparent = page.querySelector('#chkConvertToWebpForTransparent').checked;
+                        config.ConvertToAvif = page.querySelector('#chkConvertToAvif').checked;
+                        config.EnableInSidebar = page.querySelector('#chkEnableInSidebar').checked;
+
+                        config.JpegQuality = parseInt(page.querySelector('#txtJpegQuality').value);
+                        config.JpegProgressive = page.querySelector('#chkJpegProgressive').checked;
+
+                        config.WebpQuality = parseInt(page.querySelector('#txtWebpQuality').value);
+                        config.WebpLossless = page.querySelector('#chkWebpLossless').checked;
+
+                        config.AvifQuality = parseInt(page.querySelector('#txtAvifQuality').value);
+                        config.AvifSpeed = parseInt(page.querySelector('#txtAvifSpeed').value);
+
+                        config.PngCompressionLevel = parseInt(page.querySelector('#txtPngCompressionLevel').value);
+
+                        config.MaxMetadataDimension = parseInt(page.querySelector('#txtMaxMetadataDimension').value);
+                        config.MaxAvatarDimension = parseInt(page.querySelector('#txtMaxAvatarDimension').value);
+                        config.LogCodecWarnings = page.querySelector('#chkLogCodecWarnings').checked;
+
+                        // Mobile bindings
+                        config.EnableClientProfiling = page.querySelector('#chkEnableClientProfiling').checked;
+                        config.MobileJpegQuality = parseInt(page.querySelector('#txtMobileJpegQuality').value);
+                        config.MobileWebpQuality = parseInt(page.querySelector('#txtMobileWebpQuality').value);
+                        config.MobileMaxDimension = parseInt(page.querySelector('#txtMobileMaxDimension').value);
+
+                        // Backup bindings
+                        config.BackupBeforeSweep = page.querySelector('#chkBackupBeforeSweep').checked;
+                        config.MinImprovementPercentage = parseInt(page.querySelector('#txtMinImprovementPercentage').value);
+                        config.BackupFolderPath = page.querySelector('#txtBackupFolderPath').value.trim();
+
+                        // Exclusion bindings
+                        config.BlacklistWords = page.querySelector('#txtBlacklistWords').value.trim();
+                        config.BlacklistCaseSensitive = page.querySelector('#chkBlacklistCaseSensitive').checked;
+                        config.BlacklistMatchLocation = page.querySelector('#selectBlacklistMatchLocation').value;
+                        config.BlacklistUseAndOperator = page.querySelector('#chkBlacklistUseAndOperator').checked;
+
+                        // Areas to Process options
+                        config.ProcessMetadata = page.querySelector('#chkProcessMetadata').checked;
+                        config.ProcessCollections = page.querySelector('#chkProcessCollections').checked;
+                        config.ProcessPlaylists = page.querySelector('#chkProcessPlaylists').checked;
+                        config.ProcessSmartlists = page.querySelector('#chkProcessSmartlists').checked;
+                        config.ProcessLibraryCovers = page.querySelector('#chkProcessLibraryCovers').checked;
+                        config.ProcessUserProfiles = page.querySelector('#chkProcessUserProfiles').checked;
+                        config.ProcessTrickplay = page.querySelector('#chkProcessTrickplay').checked;
+                        config.PurgeTrickplay = page.querySelector('#chkPurgeTrickplay').checked;
+
+                        config.ResizeLibraryCovers = page.querySelector('#chkResizeLibraryCovers').checked;
+                        config.LibraryCoversWidth = parseInt(page.querySelector('#txtLibraryCoversWidth').value) || 500;
+
+                        // Save media library path mappings locally
+                        config.IncludedLibraries = tempIncludedLibraries;
+
+                        ApiClient.updatePluginConfiguration(pluginId, config).then(function (result) {
+                            // Reset dirty flags after successful configuration updates
+                            isFormDirty = false;
+                            allowBypass = false;
+                            Dashboard.processPluginConfigurationUpdateResult(result);
+                        });
+                    });
+
+                    return false;
+                });
+            })();
+        </script>
+    </div>
+</body>
+</html>

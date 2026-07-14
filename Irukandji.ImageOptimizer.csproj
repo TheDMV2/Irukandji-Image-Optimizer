@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net9.0;net10.0</TargetFrameworks>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <AssemblyName>Irukandji.ImageOptimizer</AssemblyName>
+    <RootNamespace>Irukandji.ImageOptimizer</RootNamespace>
+    <Version>1.0.0</Version>
+    <NoWarn>$(NoWarn);CA2255</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Configuration/configPage.html" />
+  </ItemGroup>
+
+  <!-- Conditional SDK mapping for Jellyfin 10.11.11 / .NET 9 fallback -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'net9.0'">
+    <PackageReference Include="Jellyfin.Controller" Version="10.11.11" ExcludeAssets="runtime" />
+    <PackageReference Include="Jellyfin.Model" Version="10.11.11" ExcludeAssets="runtime" />
+  </ItemGroup>
+
+  <!-- Conditional SDK mapping for Jellyfin 12.0.0-rc2 / .NET 10 native -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0'">
+    <PackageReference Include="Jellyfin.Controller" Version="12.0.0-rc2" ExcludeAssets="runtime" />
+    <PackageReference Include="Jellyfin.Model" Version="12.0.0-rc2" ExcludeAssets="runtime" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="SkiaSharp" Version="3.119.4" ExcludeAssets="runtime" />
+  </ItemGroup>
+
+</Project>
