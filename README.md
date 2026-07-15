@@ -27,7 +27,7 @@ It identifies mobile clients and offers alternate compression settings (usually 
 
 It also creates a cache in memory to store requested images, so for a busy server with multiple clients, it will only compress the images once, and serve them multiple times, further speeding responses.
 
-### Function 3 - Saving Metadata
+### Function 3 - Compressing Metadata Images
 Intercepts metadata image downloads that Jellyfin does, and recompresses them before saving locally. When a new movie or show is scanned into Jellyfin, Irukandji will intercept the image and recompress it before it is saved locally.
 
 ### Function 4 - Image Compression
