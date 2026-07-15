@@ -53,4 +53,4 @@ Either drop into your plugins folder, or install the manifest and install like a
 
 # WARNING - AI CODED
 
-Everything behind the scenes was coded by free-version Gemini. The project quickly got too big for free-version Claude. Would paid versions have produced better code? Maybe. This is open source, and I am open to fixing and improving it. Because the third function can delete and modify potentially important files (like maybe DVD covers, or scanned CD pamphlets), use it with caution. Back up first, test second, and only then run it for real.
+Everything behind the scenes was coded by free-version Gemini. The project quickly got too big for free-version Claude. Would paid versions have produced better code? Maybe. This is open source, and I am open to fixing and improving it. Because the "Library Sweep" function can delete and modify potentially important files (like maybe DVD covers, or scanned CD pamphlets), use it with caution. Back up first, test second, and only then run it for real.
