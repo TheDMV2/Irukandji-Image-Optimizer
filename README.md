@@ -4,7 +4,7 @@
 
 # Irukandji - Jellyfin Image Compressor
 A Jellyfin plugin to optimize images on the fly, and in batch mode.
-[WARNING: this was 100% AI coded. All text was 100% human written.]
+[WARNING: this plugin was 100% AI coded. This text was 100% human written.]
 
 Irukandji are one the world's smallest (species of) jellyfish, at about 1 cubic centimetre in size.
 
@@ -54,3 +54,23 @@ Either drop into your plugins folder, or install the manifest and install like a
 # WARNING - AI CODED
 
 Everything behind the scenes was coded by free-version Gemini. The project quickly got too big for free-version Claude. Would paid versions have produced better code? Maybe. This is open source, and I am open to fixing and improving it. Because the "Library Sweep" function can delete and modify potentially important files (like maybe DVD covers, or scanned CD pamphlets), use it with caution. Back up first, test second, and only then run it for real.
+
+# What the files are
+
+The following is dumped from AI, to help anyone wanting to fix or edit this.
+
+1. C# Source Files (.cs)
+	•	ImageOptimizerController.cs: The API controller providing backend REST endpoints (/ImageOptimizer/...) for the configuration page (e.g., status, searching metadata providers, testing optimization sandboxes, running the incremental sweeper, purging backups).
+	•	ImageOptimizerService.cs: The core business logic service that decodes, scales, and encodes image files using SkiaSharp. It handles fast-path on-the-fly request compression and full metadata/avatar re-encoding.
+	•	ImageOptimizerMiddleware.cs: The ASP.NET Core middleware that intercepts Jellyfin's outgoing image GET requests and avatar uploads, automatically optimizing and caching them before serving.
+	•	ImageOptimizerStartupFilter.cs: Integrates the custom image optimization middleware into Jellyfin’s ASP.NET Core request pipeline on startup.
+	•	ImageOptimizationHandler.cs: A DelegatingHandler designed to intercept outgoing HttpClient requests (such as remote metadata downloads) and optimize those images on-the-fly.
+	•	PluginConfiguration.cs: Holds the strongly-typed options and defaults used by the plugin (JPEG/WebP quality settings, exclusion keywords, dimensions, and library sweeper selection flags).
+	•	PluginLogger.cs: Provides custom logic to cleanly log optimization exceptions, warnings, and information to localized log files on disk.
+	•	ModuleInitializer.cs: Utilizes the [ModuleInitializer] attribute to execute startup routines (such as middleware registration) when the plugin assembly is initially loaded.
+2. Web and Layout Assets
+	•	configPage.html: The dynamic frontend GUI dashboard shown in Jellyfin's administration dashboard, written in HTML and JavaScript (using Jellyfin's standard SPA template).
+3. Build and Project Configurations
+	•	Irukandji.ImageOptimizer.csproj: The MSBuild project file defining compile properties, embedded HTML resources, custom CA2255 warning overrides, and NuGet dependencies specifically targeting .net9.0 for Jellyfin 10.11.11.
+	•	project.assets.json: The NuGet restore file containing dependency specifications and local package mappings on your building machine.
+	•	Irukandji.ImageOptimizer.csproj.nuget.dgspec.json: The MSBuild NuGet restore diagnostic dependency graph specification file.
